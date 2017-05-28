@@ -5,11 +5,7 @@ import var Cairo.CAIRO_FONT_SLANT_ITALIC
 import var Cairo.CAIRO_FONT_WEIGHT_BOLD
 import var Cairo.CAIRO_FONT_WEIGHT_NORMAL
 
-import struct Geometry.BallView
-import struct Geometry.Transform
-import struct Geometry.Quaternion
-import struct Geometry.Vector3D
-import func Geometry.make_sphere
+import Geometry
 
 import Glibc
 import Noise
@@ -38,14 +34,32 @@ class FlowSphere
         field_mesh:MeshResource,
         ball_mesh:MeshResource
 
-    var transform:Transform
+    var transform:Transform,
+        θ:Double = 0
 
     private static
-    let noise_gen:SuperSimplex3D = SuperSimplex3D(amplitude: 1/256, frequency: 1.5, seed: 1)
+    let noise_gen:SuperSimplex3D = SuperSimplex3D(amplitude: 1/256, frequency: 1.75, seed: 1)
     private static
-    func potential(_ x:Double, _ y:Double, _ z:Double) -> Double
+    func potential(_ x:Double, _ y:Double, _ z:Double, θ:Double) -> Double
     {
-        return FlowSphere.noise_gen.evaluate(x, y, z) - 0.15*cos(3*Double.pi * z)
+        var φ:Double = asin(z)
+        if φ.isNaN
+        {
+            φ = z < 1 ? -0.5*Double.pi : 0.5*Double.pi
+        }
+
+        //let ICZ:Double = abs(φ) < Double.pi / 6 ? cos(6 * φ) + 1 : 0
+
+        let s1:Double = sin(θ),
+            c1:Double = cos(θ)
+
+            //s2:Double = sin(-2*θ),
+            //c2:Double = cos(-2*θ)
+
+        let ferrel:Double = FlowSphere.noise_gen.evaluate(x*c1 - y*s1 + 1, x*s1 + y*c1 + 1, z + 1) - 0.25*cos(6 * φ)
+            //hadley:Double = FlowSphere.noise_gen.evaluate(x*c2 - y*s2 + 1, x*s2 + y*c2 + 1, z + 1) - 0.15*cos(6 * φ)
+
+        return ferrel// * (1 - ICZ) + hadley * ICZ
     }
 
     init(n:Int)
@@ -145,14 +159,25 @@ class FlowSphere
 
     func advance_points(refreshing refresh:Int = 50)
     {
+        self.θ -= 0.003
         for i in stride(from: 0, to: self.point_coordinates.count, by: 6)
         {
             let position:Vector3D<Double> = Vector3D(Double(self.point_coordinates[i]), Double(self.point_coordinates[i + 1]), Double(self.point_coordinates[i + 2]))
 
-            let curl:Vector3D<Float> = FlowSphere.curl(at: position, bias: -0.5, coriolis: position.z)
-            let point:Vector3D<Float> = Vector3D(self.point_coordinates[i    ] + 0.005*curl.x,
-                                                 self.point_coordinates[i + 1] + 0.005*curl.y,
-                                                 self.point_coordinates[i + 2] + 0.005*curl.z).unit
+            //let velocity:Vector3D<Float>   = FlowSphere.curl(at: position, bias: -0.25, coriolis: 0),
+            let deflection:Vector3D<Float> = FlowSphere.curl(at: position, θ: self.θ, bias: -0.25, coriolis: 2*position.z) // velocity - Vector3D(0, 0, 1).cross(velocity)
+
+            var φ:Double = asin(position.z)
+            if φ.isNaN
+            {
+                φ = position.z < 1 ? -0.5*Double.pi : 0.5*Double.pi
+            }
+            let ICZ:Double = cos(6 * φ)
+            let trade_winds:(x:Float, y:Float) = (x: Float(ICZ*position.y), y: -Float(ICZ*position.x))
+
+            let point:Vector3D<Float> = Vector3D(self.point_coordinates[i    ] + 0.005*(deflection.x + trade_winds.x),
+                                                 self.point_coordinates[i + 1] + 0.005*(deflection.y + trade_winds.y),
+                                                 self.point_coordinates[i + 2] + 0.005*deflection.z).unit
             self.point_coordinates[i    ] = point.x
             self.point_coordinates[i + 1] = point.y
             self.point_coordinates[i + 2] = point.z
@@ -211,7 +236,7 @@ class FlowSphere
     }
 
     private static
-    func curl(at n:Vector3D<Double>, bias:Double = 0, coriolis:Double = 1) -> Vector3D<Float>
+    func curl(at n:Vector3D<Double>, θ:Double = 0, bias:Double = 0, coriolis:Double = 1) -> Vector3D<Float>
     {
         let δ:Double = 0.0001,
             δ_inv:Double = 0.5/δ
@@ -231,12 +256,12 @@ class FlowSphere
         let u:Vector3D<Double> = tangent.unit,
             v:Vector3D<Double> = n.cross(u).unit
 
-        let fu1:Double = FlowSphere.potential(n.x - δ*u.x, n.y - δ*u.y, n.z - δ*u.z),
-            fu2:Double = FlowSphere.potential(n.x + δ*u.x, n.y + δ*u.y, n.z + δ*u.z),
+        let fu1:Double = FlowSphere.potential(n.x - δ*u.x, n.y - δ*u.y, n.z - δ*u.z, θ: θ),
+            fu2:Double = FlowSphere.potential(n.x + δ*u.x, n.y + δ*u.y, n.z + δ*u.z, θ: θ),
             dfdu:Double = (fu2 - fu1) * δ_inv
 
-        let fv1:Double = FlowSphere.potential(n.x - δ*v.x, n.y - δ*v.y, n.z - δ*v.z),
-            fv2:Double = FlowSphere.potential(n.x + δ*v.x, n.y + δ*v.y, n.z + δ*v.z),
+        let fv1:Double = FlowSphere.potential(n.x - δ*v.x, n.y - δ*v.y, n.z - δ*v.z, θ: θ),
+            fv2:Double = FlowSphere.potential(n.x + δ*v.x, n.y + δ*v.y, n.z + δ*v.z, θ: θ),
             dfdv:Double = (fv2 - fv1) * δ_inv
 
         return Vector3D<Float>(Float(coriolis * (v.x*dfdu - u.x*dfdv) + bias*(u.x*dfdu + v.x*dfdv)),
