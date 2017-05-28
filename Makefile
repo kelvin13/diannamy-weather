@@ -14,7 +14,7 @@ debug:
 	swift build $(SWIFTC_FLAGS) $(LINKER_FLAGS)
 
 build:
-	swift $(SWIFTC_FLAGS) $(LINKER_FLAGS)
+	swift build -c release $(SWIFTC_FLAGS) $(LINKER_FLAGS)
 
 test: build
 	swift test $(SWIFTC_FLAGS) $(LINKER_FLAGS)

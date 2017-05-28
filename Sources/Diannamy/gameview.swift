@@ -143,14 +143,16 @@ class FlowSphere
         self.ball_mesh.release_resources()
     }
 
-    func advance_points(refreshing refresh:Int = 100)
+    func advance_points(refreshing refresh:Int = 50)
     {
         for i in stride(from: 0, to: self.point_coordinates.count, by: 6)
         {
             let position:Vector3D<Double> = Vector3D(Double(self.point_coordinates[i]), Double(self.point_coordinates[i + 1]), Double(self.point_coordinates[i + 2]))
 
-            let curl:Vector3D<Float> = FlowSphere.curl(at: position, bias: -0.5)
-            let point:Vector3D<Float> = Vector3D(self.point_coordinates[i] + 0.01*curl.x, self.point_coordinates[i + 1] + 0.01*curl.y, self.point_coordinates[i + 2] + 0.01*curl.z).unit
+            let curl:Vector3D<Float> = FlowSphere.curl(at: position, bias: -0.5, coriolis: position.z)
+            let point:Vector3D<Float> = Vector3D(self.point_coordinates[i    ] + 0.005*curl.x,
+                                                 self.point_coordinates[i + 1] + 0.005*curl.y,
+                                                 self.point_coordinates[i + 2] + 0.005*curl.z).unit
             self.point_coordinates[i    ] = point.x
             self.point_coordinates[i + 1] = point.y
             self.point_coordinates[i + 2] = point.z
@@ -209,7 +211,7 @@ class FlowSphere
     }
 
     private static
-    func curl(at n:Vector3D<Double>, bias:Double = 0) -> Vector3D<Float>
+    func curl(at n:Vector3D<Double>, bias:Double = 0, coriolis:Double = 1) -> Vector3D<Float>
     {
         let δ:Double = 0.0001,
             δ_inv:Double = 0.5/δ
@@ -237,9 +239,9 @@ class FlowSphere
             fv2:Double = FlowSphere.potential(n.x + δ*v.x, n.y + δ*v.y, n.z + δ*v.z),
             dfdv:Double = (fv2 - fv1) * δ_inv
 
-        return Vector3D<Float>(Float(v.x*dfdu - u.x*dfdv + bias*(u.x*dfdu + v.x*dfdv)),
-                               Float(v.y*dfdu - u.y*dfdv + bias*(u.y*dfdu + v.y*dfdv)),
-                               Float(v.z*dfdu - u.z*dfdv + bias*(u.z*dfdu + v.z*dfdv)))
+        return Vector3D<Float>(Float(coriolis * (v.x*dfdu - u.x*dfdv) + bias*(u.x*dfdu + v.x*dfdv)),
+                               Float(coriolis * (v.y*dfdu - u.y*dfdv) + bias*(u.y*dfdu + v.y*dfdv)),
+                               Float(coriolis * (v.z*dfdu - u.z*dfdv) + bias*(u.z*dfdu + v.z*dfdv)))
     }
 
 }
@@ -295,7 +297,7 @@ struct View3D:GameScene
             fatalError("failed to make mesh")
         }
         self._cube = cube_mesh
-        self._cloudvectors = FlowSphere(n: 4000)
+        self._cloudvectors = FlowSphere(n: 8000)
     }
 
     func release_resources()
