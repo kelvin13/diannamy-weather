@@ -41,7 +41,7 @@ class Billboard
 
         self.texture = self.surface.with_data
         {
-            return Texture2DResource(pixbuf: $0, format: GL_BGRA, layout: GL_UNSIGNED_INT_8_8_8_8_REV, width: abs(h), height: abs(k), linear: false)
+            return Texture2DResource(pixbuf: $0, width: abs(h), height: abs(k), format: .argb_per_int32, linear: false)
         }
     }
 

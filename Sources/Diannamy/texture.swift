@@ -2,27 +2,81 @@ import SGLOpenGL
 
 struct Texture2DResource
 {
+    enum Format
+    {
+    case quad_bytes,
+         triple_bytes,
+         double_bytes,
+         single_bytes,
+         rgba_per_int32,
+         argb_per_int32
+
+        var format_code:GLenum
+        {
+            switch self
+            {
+            case .quad_bytes, .rgba_per_int32:
+                return GL_RGBA
+            case .argb_per_int32:
+                return GL_BGRA
+            case .triple_bytes:
+                return GL_RGB
+            case .double_bytes:
+                return GL_RG
+            case .single_bytes:
+                return GL_RED
+            }
+        }
+
+        var layout_code:GLenum
+        {
+            switch self
+            {
+            case .quad_bytes, .triple_bytes, .double_bytes, .single_bytes:
+                return GL_UNSIGNED_BYTE
+            case .rgba_per_int32:
+                return GL_UNSIGNED_INT_8_8_8_8
+            case .argb_per_int32:
+                return GL_UNSIGNED_INT_8_8_8_8_REV
+            }
+        }
+
+        var internal_code:GLenum
+        {
+            switch self
+            {
+            case .quad_bytes, .rgba_per_int32, .argb_per_int32:
+                return GL_RGBA
+            case .triple_bytes:
+                return GL_RGB
+            case .double_bytes:
+                return GL_RG
+            case .single_bytes:
+                return GL_RED
+            }
+        }
+    }
+
     let tex_id:GLuint
 
     private
-    let format:GLenum,
-        layout:GLenum,
+    let format:Format,
         width :CInt,
         height:CInt
 
-    init(pixbuf:UnsafeBufferPointer<UInt8>, format:GLenum, layout:GLenum, width h:CInt, height k:CInt, linear:Bool = true)
+    init(pixbuf:UnsafeBufferPointer<UInt8>, width h:CInt, height k:CInt, format:Format, linear:Bool = true)
     {
         var tex_id:GLuint = 0
         glGenTextures(1, &tex_id)
         glBindTexture(GL_TEXTURE_2D, tex_id)
         glTexImage2D(target         : GL_TEXTURE_2D,
                      level          : 0,
-                     internalformat : format == GL_RGBA || format == GL_BGRA ? GL_RGBA : GL_RGB,
+                     internalformat : format.internal_code,
                      width          : h,
                      height         : k,
                      border         : 0,
-                     format         : format,
-                     type           : layout,
+                     format         : format.format_code,
+                     type           : format.layout_code,
                      pixels         : UnsafeRawPointer(pixbuf.baseAddress!))
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST)
@@ -33,7 +87,6 @@ struct Texture2DResource
 
         self.tex_id = tex_id
         self.format = format
-        self.layout = layout
         self.width  = h
         self.height = k
     }
@@ -53,15 +106,12 @@ struct Texture2DResource
                      yoffset        : 0,
                      width          : self.width,
                      height         : self.height,
-                     format         : self.format,
-                     type           : self.layout,
+                     format         : self.format.format_code,
+                     type           : self.format.layout_code,
                      pixels         : UnsafeRawPointer(pixbuf.baseAddress!))
         glBindTexture(GL_TEXTURE_2D, 0)
     }
 }
-
-
-
 
 
 /*

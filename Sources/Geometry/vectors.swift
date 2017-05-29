@@ -55,6 +55,12 @@ struct Vector3D<FloatType:FloatingPoint>
     }
 
     public static
+    func * (_ a:FloatType, _ b:Vector3D<FloatType>) -> Vector3D<FloatType>
+    {
+        return Vector3D(a*b.x, a*b.y, a*b.z)
+    }
+
+    public static
     func - (_ a:Vector3D<FloatType>, _ b:Vector3D<FloatType>) -> Vector3D<FloatType>
     {
         return Vector3D(a.x - b.x, a.y - b.y, a.z - b.z)

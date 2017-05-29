@@ -22,6 +22,12 @@ enum Shaders
                            fragment_file: "Sources/Shaders/vertcolor.frag",
                            tex_uniforms : [],
                            uniforms     : ["model"])!
+    static
+    let cloudgen  = Shader(vertex_file  : "Sources/Shaders/cloudgen.vert",
+                           geometry_file: "Sources/Shaders/cloudgen.geom",
+                           fragment_file: "Sources/Shaders/cloudgen.frag",
+                           tex_uniforms : [],
+                           uniforms     : ["model"])!
 }
 
 class FlowSphere
@@ -91,16 +97,14 @@ class FlowSphere
             points.append(Float(position.x))
             points.append(Float(position.y))
             points.append(Float(position.z))
-
-            //let noise_value:Float = Float(FlowSphere.potential(position.x, position.y, position.z)) + 0.5
-            points.append(0.5)
-            points.append(1)
-            points.append(0.8)
+            points.append(0)
+            points.append(0)
+            points.append(0)
 
             let curl:Vector3D<Float> = FlowSphere.curl(at: position)
 
-            let slope:Float = 0.5 * curl.magnitude,
-                scale:Float = 0.02
+            let slope:Float = 0.4 * curl.magnitude,
+                scale:Float = 0.01
             field.append(Float(position.x) - scale * curl.x)
             field.append(Float(position.y) - scale * curl.y)
             field.append(Float(position.z) - scale * curl.z)
@@ -136,9 +140,9 @@ class FlowSphere
         var (ball_coords, ball_indices):([Float], [Int]) = make_sphere(radius: 0.98, subdivisions: 8)
         for i in stride(from: 0, to: ball_coords.count, by: 6)
         {
-            ball_coords[i + 3] = 0.1
+            ball_coords[i + 3] = 0.05
             ball_coords[i + 4] = 0.1
-            ball_coords[i + 5] = 0.1
+            ball_coords[i + 5] = 0.4
         }
         guard let ball_mesh:MeshResource = MeshResource(coordinates: ball_coords, indices: ball_indices, layout: [3, 3])
         else
@@ -157,32 +161,8 @@ class FlowSphere
         self.ball_mesh.release_resources()
     }
 
-    func advance_points(refreshing refresh:Int = 50)
+    func advance_points(refreshing refresh:Int = 25)
     {
-        self.θ -= 0.003
-        for i in stride(from: 0, to: self.point_coordinates.count, by: 6)
-        {
-            let position:Vector3D<Double> = Vector3D(Double(self.point_coordinates[i]), Double(self.point_coordinates[i + 1]), Double(self.point_coordinates[i + 2]))
-
-            //let velocity:Vector3D<Float>   = FlowSphere.curl(at: position, bias: -0.25, coriolis: 0),
-            let deflection:Vector3D<Float> = FlowSphere.curl(at: position, θ: self.θ, bias: -0.25, coriolis: 2*position.z) // velocity - Vector3D(0, 0, 1).cross(velocity)
-
-            var φ:Double = asin(position.z)
-            if φ.isNaN
-            {
-                φ = position.z < 1 ? -0.5*Double.pi : 0.5*Double.pi
-            }
-            let ICZ:Double = cos(6 * φ)
-            let trade_winds:(x:Float, y:Float) = (x: Float(ICZ*position.y), y: -Float(ICZ*position.x))
-
-            let point:Vector3D<Float> = Vector3D(self.point_coordinates[i    ] + 0.005*(deflection.x + trade_winds.x),
-                                                 self.point_coordinates[i + 1] + 0.005*(deflection.y + trade_winds.y),
-                                                 self.point_coordinates[i + 2] + 0.005*deflection.z).unit
-            self.point_coordinates[i    ] = point.x
-            self.point_coordinates[i + 1] = point.y
-            self.point_coordinates[i + 2] = point.z
-        }
-
         let rand_scale:Double = 2 / Double(CInt.max)
         var refreshed:Int = 0
         while refreshed < refresh
@@ -210,28 +190,55 @@ class FlowSphere
             self.refresh_index = self.refresh_index + 6 >= self.point_coordinates.count ? 0 : self.refresh_index + 6
             refreshed += 1
         }
+
+        self.θ -= 0.0015
+        for i in stride(from: 0, to: self.point_coordinates.count, by: 6)
+        {
+            let position:Vector3D<Double> = Vector3D(Double(self.point_coordinates[i]), Double(self.point_coordinates[i + 1]), Double(self.point_coordinates[i + 2]))
+
+            //let velocity:Vector3D<Float>   = FlowSphere.curl(at: position, bias: -0.25, coriolis: 0),
+            let deflection:Vector3D<Float> = FlowSphere.curl(at: position, θ: self.θ, bias: -0.25, coriolis: 2*position.z) // velocity - Vector3D(0, 0, 1).cross(velocity)
+
+            var φ:Double = asin(position.z)
+            if φ.isNaN
+            {
+                φ = position.z < 1 ? -0.5*Double.pi : 0.5*Double.pi
+            }
+            let ICZ:Double = cos(6 * φ)
+            let trade_winds:(x:Float, y:Float) = (x: Float(ICZ*position.y), y: -Float(ICZ*position.x))
+
+            let velocity:Vector3D<Float> = 0.0025 * Vector3D(deflection.x + trade_winds.x, deflection.y + trade_winds.y, deflection.z)
+            let point:Vector3D<Float> = Vector3D(self.point_coordinates[i    ] + velocity.x,
+                                                 self.point_coordinates[i + 1] + velocity.y,
+                                                 self.point_coordinates[i + 2] + velocity.z).unit
+            self.point_coordinates[i    ] = point.x
+            self.point_coordinates[i + 1] = point.y
+            self.point_coordinates[i + 2] = point.z
+            self.point_coordinates[i + 3] = velocity.x
+            self.point_coordinates[i + 4] = velocity.y
+            self.point_coordinates[i + 5] = velocity.z
+        }
+
         self.point_mesh.replace_coordinates(with: self.point_coordinates)
     }
 
     func shade()
     {
+        // globe
         glUseProgram(program: Shaders.vertcolor.program)
-
-        /* bind matrices */
         glUniformMatrix4fv(Shaders.vertcolor.u_ids[0], 1, false, self.transform.model_matrix)
-        //glUniformMatrix4fv(u_ids[1], 1, false, self.transform.model_inverse)
-        //glUniformMatrix3fv(u_ids[2], 1, false, self.transform.rotation_matrix)
-
-        /* render geometry */
-        glPointSize(size: 5)
-        glBindVertexArray(array: self.point_mesh.VAO)
-        glDrawElements(GL_POINTS, self.point_mesh.n, GL_UNSIGNED_INT, nil)
-
-        glBindVertexArray(array: self.field_mesh.VAO)
-        glDrawElements(GL_LINES, self.field_mesh.n, GL_UNSIGNED_INT, nil)
+        //glBindVertexArray(array: self.field_mesh.VAO)
+        //glDrawElements(GL_LINES, self.field_mesh.n, GL_UNSIGNED_INT, nil)
 
         glBindVertexArray(array: self.ball_mesh.VAO)
         glDrawElements(GL_TRIANGLES, self.ball_mesh.n, GL_UNSIGNED_INT, nil)
+
+        // clouds
+        glUseProgram(program: Shaders.cloudgen.program)
+        glUniformMatrix4fv(Shaders.cloudgen.u_ids[0], 1, false, self.transform.model_matrix)
+        glBindVertexArray(array: self.point_mesh.VAO)
+        glDrawElements(GL_POINTS, self.point_mesh.n, GL_UNSIGNED_INT, nil)
+
         glBindVertexArray(array: 0)
     }
 

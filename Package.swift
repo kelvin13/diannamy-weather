@@ -10,8 +10,8 @@ let package = Package(
                 Target(name: "Diannamy", dependencies: ["GLFW", "SwiftCairo", "Taylor", "Geometry"])
              ],
     dependencies: [.Package(url: "../SGLOpenGL", majorVersion: 1),
-                   .Package(url: "../../noise", Version("0.0.0"))
-                   //.Package(url: "https://github.com/kelvin13/maxpng", majorVersion: 2)
+                   .Package(url: "../../noise", Version("0.0.0")), 
+                   .Package(url: "https://github.com/kelvin13/maxpng", majorVersion: 2)
                    ],
     swiftLanguageVersions: [3, 4],
     exclude: ["Sources/Shaders"]

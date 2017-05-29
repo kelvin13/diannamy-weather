@@ -13,7 +13,8 @@ struct Shader
     let tex_u_ids:[GLint],
         u_ids:[GLint]
 
-    init?(vertex_file:String, fragment_file:String, tex_uniforms:[String] = [], uniforms:[String] = [])
+    init?(vertex_file:String, geometry_file:String? = nil, fragment_file:String? = nil,
+          tex_uniforms:[String] = [], uniforms:[String] = [])
     {
         guard let vert_source:String = open_text_file(vertex_file)
         else
@@ -21,32 +22,70 @@ struct Shader
             return nil
         }
 
-        guard let frag_source:String = open_text_file(fragment_file)
+        let geom_source:String?
+        if let geometry_file:String = geometry_file
+        {
+            guard let _geom_source:String = open_text_file(geometry_file)
+            else
+            {
+                return nil
+            }
+
+            geom_source = _geom_source
+        }
         else
         {
-            return nil
+            geom_source = nil
+        }
+
+        let frag_source:String?
+        if let fragment_file:String = fragment_file
+        {
+            guard let _frag_source:String = open_text_file(fragment_file)
+            else
+            {
+                return nil
+            }
+
+            frag_source = _frag_source
+        }
+        else
+        {
+            frag_source = nil
         }
 
         self.init(vertex_source: vert_source,
+                  geometry_source: geom_source,
                   fragment_source: frag_source,
                   tex_uniforms: tex_uniforms,
                   uniforms: uniforms)
     }
 
-    init?(vertex_source:String, fragment_source:String, tex_uniforms:[String] = [], uniforms:[String] = [])
+    init?(vertex_source:String, geometry_source:String? = nil, fragment_source:String? = nil,
+          tex_uniforms:[String] = [], uniforms:[String] = [])
     {
         let program:GLuint = glCreateProgram()
-        guard let vert_shader:GLuint = Shader.compile(source: vertex_source, type: GL_VERTEX_SHADER)
-        else
+        var shaders:[GLuint] = []
+
+        for (shader_source, shader_type):(String?, GLenum) in [(vertex_source  , GL_VERTEX_SHADER  ),
+                                                               (fragment_source, GL_FRAGMENT_SHADER),
+                                                               (geometry_source, GL_GEOMETRY_SHADER)]
         {
-            return nil
+            guard let source:String = shader_source
+            else
+            {
+                continue
+            }
+            guard let shader:GLuint = Shader.compile(source: source, type: shader_type)
+            else
+            {
+                return nil
+            }
+
+            shaders.append(shader)
         }
-        guard let frag_shader:GLuint = Shader.compile(source: fragment_source, type: GL_FRAGMENT_SHADER)
-        else
-        {
-            return nil
-        }
-        guard Shader.link(program: program, shaders: [vert_shader, frag_shader])
+
+        guard Shader.link(program: program, shaders: shaders)
         else
         {
             return nil
