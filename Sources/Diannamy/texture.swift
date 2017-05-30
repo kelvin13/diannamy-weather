@@ -66,26 +66,18 @@ struct Texture2DResource
 
     init(pixbuf:UnsafeBufferPointer<UInt8>, width h:CInt, height k:CInt, format:Format, linear:Bool = true)
     {
-        var tex_id:GLuint = 0
-        glGenTextures(1, &tex_id)
-        glBindTexture(GL_TEXTURE_2D, tex_id)
-        glTexImage2D(target         : GL_TEXTURE_2D,
-                     level          : 0,
-                     internalformat : format.internal_code,
-                     width          : h,
-                     height         : k,
-                     border         : 0,
-                     format         : format.format_code,
-                     type           : format.layout_code,
-                     pixels         : UnsafeRawPointer(pixbuf.baseAddress!))
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+        self.tex_id = Texture2DResource.generate_texture(pixbuf: pixbuf, width: h, height: k, format: format, linear: linear)
+        self.format = format
+        self.width  = h
+        self.height = k
+    }
 
-        glBindTexture(GL_TEXTURE_2D, 0)
-
-        self.tex_id = tex_id
+    init(pixbuf:[UInt8], width h:CInt, height k:CInt, format:Format, linear:Bool = true)
+    {
+        self.tex_id = pixbuf.withUnsafeBufferPointer
+        {
+            return Texture2DResource.generate_texture(pixbuf: $0, width: h, height: k, format: format, linear: linear)
+        }
         self.format = format
         self.width  = h
         self.height = k
@@ -110,6 +102,30 @@ struct Texture2DResource
                      type           : self.format.layout_code,
                      pixels         : UnsafeRawPointer(pixbuf.baseAddress!))
         glBindTexture(GL_TEXTURE_2D, 0)
+    }
+
+    private static
+    func generate_texture(pixbuf:UnsafeBufferPointer<UInt8>, width h:CInt, height k:CInt, format:Format, linear:Bool) -> GLuint
+    {
+        var tex_id:GLuint = 0
+        glGenTextures(1, &tex_id)
+        glBindTexture(GL_TEXTURE_2D, tex_id)
+        glTexImage2D(target         : GL_TEXTURE_2D,
+                     level          : 0,
+                     internalformat : format.internal_code,
+                     width          : h,
+                     height         : k,
+                     border         : 0,
+                     format         : format.format_code,
+                     type           : format.layout_code,
+                     pixels         : UnsafeRawPointer(pixbuf.baseAddress!))
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
+
+        glBindTexture(GL_TEXTURE_2D, 0)
+        return tex_id
     }
 }
 

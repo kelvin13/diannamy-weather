@@ -8,7 +8,8 @@ case esc,
      up,
      left,
      right,
-     down
+     down,
+     space
 
     init?(_ key_code:CInt)
     {
@@ -26,6 +27,8 @@ case esc,
             self = .right
         case GLFW_KEY_DOWN:
             self = .down
+        case GLFW_KEY_SPACE:
+            self = .space
         default:
             return nil
         }

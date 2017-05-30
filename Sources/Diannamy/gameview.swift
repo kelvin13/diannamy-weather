@@ -9,6 +9,7 @@ import Geometry
 
 import Glibc
 import Noise
+import MaxPNG
 
 enum Shaders
 {
@@ -26,7 +27,7 @@ enum Shaders
     let cloudgen  = Shader(vertex_file  : "Sources/Shaders/cloudgen.vert",
                            geometry_file: "Sources/Shaders/cloudgen.geom",
                            fragment_file: "Sources/Shaders/cloudgen.frag",
-                           tex_uniforms : [],
+                           tex_uniforms : ["tex_cloud"],
                            uniforms     : ["model"])!
 }
 
@@ -39,6 +40,8 @@ class FlowSphere
     let point_mesh:MeshResource,
         field_mesh:MeshResource,
         ball_mesh:MeshResource
+
+    let cloud_tex:Texture2DResource
 
     var transform:Transform,
         θ:Double = 0
@@ -137,7 +140,7 @@ class FlowSphere
         }
         self.field_mesh = field_mesh
 
-        var (ball_coords, ball_indices):([Float], [Int]) = make_sphere(radius: 0.98, subdivisions: 8)
+        var (ball_coords, ball_indices):([Float], [Int]) = make_sphere(radius: 0.99, subdivisions: 8)
         for i in stride(from: 0, to: ball_coords.count, by: 6)
         {
             ball_coords[i + 3] = 0.05
@@ -151,6 +154,21 @@ class FlowSphere
         }
         self.ball_mesh = ball_mesh
 
+        let png_data:[UInt8],
+            png_properties:PNGProperties
+        do
+        {
+            try (png_data, png_properties) = png_decode(path: "../Textures/ellipse.png")
+        }
+        catch
+        {
+            fatalError(String(describing: error))
+        }
+
+        self.cloud_tex = Texture2DResource(pixbuf: png_data, width: CInt(png_properties.width),
+                                           height: CInt(png_properties.height),
+                                           format: .single_bytes)
+
         self.transform = Transform()
     }
 
@@ -159,11 +177,13 @@ class FlowSphere
         self.point_mesh.release_resources()
         self.field_mesh.release_resources()
         self.ball_mesh.release_resources()
+        self.cloud_tex.release_resources()
     }
 
-    func advance_points(refreshing refresh:Int = 25)
+    func advance_points(dt:Double)
     {
         let rand_scale:Double = 2 / Double(CInt.max)
+        let refresh:Int = Int(dt * 1800)
         var refreshed:Int = 0
         while refreshed < refresh
         {
@@ -191,7 +211,7 @@ class FlowSphere
             refreshed += 1
         }
 
-        self.θ -= 0.0015
+        self.θ -= 0.15 * dt
         for i in stride(from: 0, to: self.point_coordinates.count, by: 6)
         {
             let position:Vector3D<Double> = Vector3D(Double(self.point_coordinates[i]), Double(self.point_coordinates[i + 1]), Double(self.point_coordinates[i + 2]))
@@ -236,9 +256,16 @@ class FlowSphere
         // clouds
         glUseProgram(program: Shaders.cloudgen.program)
         glUniformMatrix4fv(Shaders.cloudgen.u_ids[0], 1, false, self.transform.model_matrix)
+            // bind cloud texture to location 0
+        glUniform1i(Shaders.cloudgen.tex_u_ids[0], 0)
+        glActiveTexture(texture: GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, self.cloud_tex.tex_id)
+
+        glDisable(cap: GL_DEPTH_TEST)
         glBindVertexArray(array: self.point_mesh.VAO)
         glDrawElements(GL_POINTS, self.point_mesh.n, GL_UNSIGNED_INT, nil)
 
+        glEnable(cap: GL_DEPTH_TEST)
         glBindVertexArray(array: 0)
     }
 
@@ -285,7 +312,8 @@ struct View3D:GameScene
         _cube:MeshResource
 
     private
-    var _cloudvectors:FlowSphere
+    var _cloudvectors:FlowSphere,
+        _advance:Bool = true
 
     private
     var render_mode:GLenum = GL_FILL,
@@ -329,7 +357,7 @@ struct View3D:GameScene
             fatalError("failed to make mesh")
         }
         self._cube = cube_mesh
-        self._cloudvectors = FlowSphere(n: 8000)
+        self._cloudvectors = FlowSphere(n: 12000)
     }
 
     func release_resources()
@@ -345,10 +373,13 @@ struct View3D:GameScene
         glEnable(cap: GL_CULL_FACE)
         glPolygonMode(GL_FRONT_AND_BACK, self.render_mode)
 
-        self._cloudvectors.advance_points()
+        if self._advance
+        {
+            self._cloudvectors.advance_points(dt: dt)
+        }
 
-        self._cloudvectors.transform.rotate(by: Quaternion(Vector3D(0, 0, 1), Float(dt*0.1)))
-        self._cloudvectors.transform.update_matrices()
+        //self._cloudvectors.transform.rotate(by: Quaternion(Vector3D(0, 0, 1), Float(dt*0.1)))
+        //self._cloudvectors.transform.update_matrices()
         self._cloudvectors.shade()
 
         // draw FPS counter
@@ -407,6 +438,8 @@ struct View3D:GameScene
         {
         case .tab:
             self.render_mode = self.render_mode == GL_FILL ? GL_LINE : GL_FILL
+        case .space:
+            self._advance = !self._advance
         default:
             return
         }

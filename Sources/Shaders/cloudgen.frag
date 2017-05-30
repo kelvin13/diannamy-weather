@@ -1,8 +1,17 @@
 #version 330 core
 
+in GS_OUT
+{
+    vec2 uv;
+    float speed;
+} fs_in;
+
 out vec4 color;
+
+uniform sampler2D tex_cloud;
 
 void main()
 {
-    color = vec4(1, 1, 1, 0.5);
+
+    color = vec4(1, 1, 1, 60*fs_in.speed * texture(tex_cloud, fs_in.uv).r);
 }
