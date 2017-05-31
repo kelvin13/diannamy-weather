@@ -1,0 +1,34 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Noise",
+        "repositoryURL": "/home/kelvin/dev/noise",
+        "state": {
+          "branch": null,
+          "revision": "0a7395ce1b553ddaa77a39571ce52e917449c599",
+          "version": "0.0.0"
+        }
+      },
+      {
+        "package": "SGLOpenGL",
+        "repositoryURL": "/home/kelvin/dev/Diannamy3/SGLOpenGL",
+        "state": {
+          "branch": null,
+          "revision": "8d86db3e1874fd32f4254624322b3e474ff3535b",
+          "version": "1.0.0"
+        }
+      },
+      {
+        "package": "Zlib",
+        "repositoryURL": "https://github.com/kelvin13/swift-zlib",
+        "state": {
+          "branch": null,
+          "revision": "5bce13425cc29bd5508cac62256e7f06efbc18c6",
+          "version": "1.0.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}

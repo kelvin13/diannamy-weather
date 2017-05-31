@@ -13,5 +13,5 @@ uniform sampler2D tex_cloud;
 void main()
 {
 
-    color = vec4(1, 1, 1, 60*fs_in.speed * texture(tex_cloud, fs_in.uv).r);
+    color = vec4(1, 1, 1, 80*fs_in.speed * texture(tex_cloud, fs_in.uv).r);
 }

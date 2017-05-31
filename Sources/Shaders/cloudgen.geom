@@ -30,18 +30,18 @@ void main()
     vec3 normal    = gl_in[0].gl_Position.xyz;
     vec3 tangent   = normalize(gs_in[0].velocity);
     gs_out.speed   = length(gs_in[0].velocity);
-    vec3 w = 0.005*cross(normal, tangent); // tangent and normal are always perpendicular
+    vec3 w = 2 * (0.0005 + gs_out.speed) * cross(normal, tangent); // tangent and normal are always perpendicular
     vec3 l = 10 * (0.0005 + gs_out.speed) * tangent;
     gl_Position = projection * view * model * vec4(normal - w - l, 1);
     gs_out.uv = vec2(0, 0);
     EmitVertex();
 
     gl_Position = projection * view * model * vec4(normal - w + l, 1);
-    gs_out.uv = vec2(0, 1);
+    gs_out.uv = vec2(1, 0);
     EmitVertex();
 
     gl_Position = projection * view * model * vec4(normal + w - l, 1);
-    gs_out.uv = vec2(1, 0);
+    gs_out.uv = vec2(0, 1);
     EmitVertex();
 
     gl_Position = projection * view * model * vec4(normal + w + l, 1);

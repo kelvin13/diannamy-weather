@@ -9,7 +9,6 @@ import Geometry
 
 import Glibc
 import Noise
-import MaxPNG
 
 enum Shaders
 {
@@ -29,6 +28,11 @@ enum Shaders
                            fragment_file: "Sources/Shaders/cloudgen.frag",
                            tex_uniforms : ["tex_cloud"],
                            uniforms     : ["model"])!
+    static
+    let globe     = Shader(vertex_file  : "Sources/Shaders/planet.vert",
+                           fragment_file: "Sources/Shaders/planet.frag",
+                           tex_uniforms : ["tex_color_cube"],
+                           uniforms     : ["model"])!
 }
 
 class FlowSphere
@@ -41,7 +45,8 @@ class FlowSphere
         field_mesh:MeshResource,
         ball_mesh:MeshResource
 
-    let cloud_tex:Texture2DResource
+    let cloud_tex:Texture2DResource,
+        globe_tex:CubeTextureResource
 
     var transform:Transform,
         θ:Double = 0
@@ -140,13 +145,7 @@ class FlowSphere
         }
         self.field_mesh = field_mesh
 
-        var (ball_coords, ball_indices):([Float], [Int]) = make_sphere(radius: 0.99, subdivisions: 8)
-        for i in stride(from: 0, to: ball_coords.count, by: 6)
-        {
-            ball_coords[i + 3] = 0.05
-            ball_coords[i + 4] = 0.1
-            ball_coords[i + 5] = 0.4
-        }
+        let (ball_coords, ball_indices):([Float], [Int]) = make_sphere(radius: 0.99, subdivisions: 8)
         guard let ball_mesh:MeshResource = MeshResource(coordinates: ball_coords, indices: ball_indices, layout: [3, 3])
         else
         {
@@ -154,20 +153,8 @@ class FlowSphere
         }
         self.ball_mesh = ball_mesh
 
-        let png_data:[UInt8],
-            png_properties:PNGProperties
-        do
-        {
-            try (png_data, png_properties) = png_decode(path: "../Textures/ellipse.png")
-        }
-        catch
-        {
-            fatalError(String(describing: error))
-        }
-
-        self.cloud_tex = Texture2DResource(pixbuf: png_data, width: CInt(png_properties.width),
-                                           height: CInt(png_properties.height),
-                                           format: .single_bytes)
+        self.cloud_tex = Texture2DResource(png: "../Textures/ellipse.png")!
+        self.globe_tex = CubeTextureResource(png_pattern: "../Textures/color_cube")!
 
         self.transform = Transform()
     }
@@ -249,6 +236,13 @@ class FlowSphere
         glUniformMatrix4fv(Shaders.vertcolor.u_ids[0], 1, false, self.transform.model_matrix)
         //glBindVertexArray(array: self.field_mesh.VAO)
         //glDrawElements(GL_LINES, self.field_mesh.n, GL_UNSIGNED_INT, nil)
+
+        glUseProgram(program: Shaders.globe.program)
+        glUniformMatrix4fv(Shaders.globe.u_ids[0], 1, false, self.transform.model_matrix)
+            // bind globe texture to location 0
+        glUniform1i(Shaders.globe.tex_u_ids[0], 0)
+        glActiveTexture(texture: GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_CUBE_MAP, self.globe_tex.tex_id)
 
         glBindVertexArray(array: self.ball_mesh.VAO)
         glDrawElements(GL_TRIANGLES, self.ball_mesh.n, GL_UNSIGNED_INT, nil)

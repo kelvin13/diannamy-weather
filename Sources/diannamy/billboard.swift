@@ -9,7 +9,7 @@ class Billboard
 
     private
     var mesh:MeshResource,
-        texture:Texture2DResource
+        texture:StreamableTexture2DResource
 
     private
     let u:Float,
@@ -41,7 +41,7 @@ class Billboard
 
         self.texture = self.surface.with_data
         {
-            return Texture2DResource(pixbuf: $0, width: abs(h), height: abs(k), format: .argb_per_int32, linear: false)
+            return StreamableTexture2DResource(pixbuf: $0, width: abs(h), height: abs(k), format: .argb_per_int32, linear: false)
         }
     }
 
