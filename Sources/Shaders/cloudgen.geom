@@ -17,12 +17,15 @@ uniform mat4 model;
 in VS_OUT
 {
     vec3 velocity;
+    float age;
+    float curvature;
 } gs_in[];
 
 out GS_OUT
 {
     vec2 uv;
     float speed;
+    float fade;
 } gs_out;
 
 void main()
@@ -30,8 +33,13 @@ void main()
     vec3 normal    = gl_in[0].gl_Position.xyz;
     vec3 tangent   = normalize(gs_in[0].velocity);
     gs_out.speed   = length(gs_in[0].velocity);
-    vec3 w = 2 * (0.0005 + gs_out.speed) * cross(normal, tangent); // tangent and normal are always perpendicular
-    vec3 l = 10 * (0.0005 + gs_out.speed) * tangent;
+    gs_out.fade    = min(1, min(gs_in[0].age, 5 - gs_in[0].age));
+    //vec3 w = 2 * (0.0015 + 0.5*gs_out.speed) * cross(normal, tangent); // tangent and normal are always perpendicular
+    vec3 w = 0.1 * cross(normal, tangent);
+    vec3 l = 0.2 * tangent;
+    //vec3 w = 0.05*min(1, gs_in[0].age) * cross(normal, tangent);
+    //vec3 l = 0.1*min(1, gs_in[0].age) * tangent;
+    //vec3 l = 5*gs_in[0].age * (0.0005 + gs_out.speed) * tangent;
     gl_Position = projection * view * model * vec4(normal - w - l, 1);
     gs_out.uv = vec2(0, 0);
     EmitVertex();

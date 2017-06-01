@@ -41,6 +41,10 @@ class FlowSphere
     var point_coordinates:[Float],
         refresh_index:Int = 0
 
+    private
+    let cloudpoint_stride:Int,
+        cloudpoint_refresh_rate:Double
+
     let point_mesh:MeshResource,
         field_mesh:MeshResource,
         ball_mesh:MeshResource
@@ -52,7 +56,7 @@ class FlowSphere
         θ:Double = 0
 
     private static
-    let noise_gen:SuperSimplex3D = SuperSimplex3D(amplitude: 1/256, frequency: 1.75, seed: 1)
+    let noise_gen:SuperSimplex3D = SuperSimplex3D(amplitude: 1/256, frequency: 1.8, seed: 1)
     private static
     func potential(_ x:Double, _ y:Double, _ z:Double, θ:Double) -> Double
     {
@@ -76,10 +80,14 @@ class FlowSphere
         return ferrel// * (1 - ICZ) + hadley * ICZ
     }
 
-    init(n:Int)
+    init(n:Int, lifetime:Double)
     {
+        let cloudpoint_layout:[Int] = [3, 3, 2]
+        self.cloudpoint_stride  = cloudpoint_layout.reduce(0, +)
+        self.cloudpoint_refresh_rate = Double(n) / lifetime
+
         var points:[Float] = []
-            points.reserveCapacity(n * 6)
+            points.reserveCapacity(n * self.cloudpoint_stride)
         var field:[Float] = []
             field.reserveCapacity(n * 12)
         let rand_scale:Double = 2 / Double(CInt.max)
@@ -108,6 +116,8 @@ class FlowSphere
             points.append(0)
             points.append(0)
             points.append(0)
+            points.append(Float(lifetime))
+            points.append(0)
 
             let curl:Vector3D<Float> = FlowSphere.curl(at: position)
 
@@ -131,7 +141,7 @@ class FlowSphere
         }
 
         self.point_coordinates = points
-        guard let point_mesh:MeshResource = MeshResource(coordinates: points, indices: Array(0 ..< n), layout: [3, 3])
+        guard let point_mesh:MeshResource = MeshResource(coordinates: points, indices: Array(0 ..< n), layout: cloudpoint_layout)
         else
         {
             fatalError("could not make sphere point mesh")
@@ -153,7 +163,7 @@ class FlowSphere
         }
         self.ball_mesh = ball_mesh
 
-        self.cloud_tex = Texture2DResource(png: "../Textures/ellipse.png")!
+        self.cloud_tex = Texture2DResource(png: "../Textures/shield1.png")!
         self.globe_tex = CubeTextureResource(png_pattern: "../Textures/color_cube")!
 
         self.transform = Transform()
@@ -170,7 +180,7 @@ class FlowSphere
     func advance_points(dt:Double)
     {
         let rand_scale:Double = 2 / Double(CInt.max)
-        let refresh:Int = Int(dt * 1800)
+        let refresh:Int = Int(dt * self.cloudpoint_refresh_rate)
         var refreshed:Int = 0
         while refreshed < refresh
         {
@@ -193,13 +203,15 @@ class FlowSphere
             self.point_coordinates[self.refresh_index    ] = Float(position.x)
             self.point_coordinates[self.refresh_index + 1] = Float(position.y)
             self.point_coordinates[self.refresh_index + 2] = Float(position.z)
+            self.point_coordinates[self.refresh_index + 6] = 0 // age
 
-            self.refresh_index = self.refresh_index + 6 >= self.point_coordinates.count ? 0 : self.refresh_index + 6
+            self.refresh_index = self.refresh_index + self.cloudpoint_stride >= self.point_coordinates.count ? 0 : self.refresh_index + self.cloudpoint_stride
             refreshed += 1
         }
 
         self.θ -= 0.15 * dt
-        for i in stride(from: 0, to: self.point_coordinates.count, by: 6)
+        let cloud_speed:Float = Float(0.125 * dt)
+        for i in stride(from: 0, to: self.point_coordinates.count, by: self.cloudpoint_stride)
         {
             let position:Vector3D<Double> = Vector3D(Double(self.point_coordinates[i]), Double(self.point_coordinates[i + 1]), Double(self.point_coordinates[i + 2]))
 
@@ -214,16 +226,18 @@ class FlowSphere
             let ICZ:Double = cos(6 * φ)
             let trade_winds:(x:Float, y:Float) = (x: Float(ICZ*position.y), y: -Float(ICZ*position.x))
 
-            let velocity:Vector3D<Float> = 0.0025 * Vector3D(deflection.x + trade_winds.x, deflection.y + trade_winds.y, deflection.z)
-            let point:Vector3D<Float> = Vector3D(self.point_coordinates[i    ] + velocity.x,
-                                                 self.point_coordinates[i + 1] + velocity.y,
-                                                 self.point_coordinates[i + 2] + velocity.z).unit
+            let velocity:Vector3D<Float> = Vector3D(deflection.x + trade_winds.x, deflection.y + trade_winds.y, deflection.z)
+            let point:Vector3D<Float> = Vector3D(self.point_coordinates[i    ] + cloud_speed * velocity.x,
+                                                 self.point_coordinates[i + 1] + cloud_speed * velocity.y,
+                                                 self.point_coordinates[i + 2] + cloud_speed * velocity.z).unit
             self.point_coordinates[i    ] = point.x
             self.point_coordinates[i + 1] = point.y
             self.point_coordinates[i + 2] = point.z
             self.point_coordinates[i + 3] = velocity.x
             self.point_coordinates[i + 4] = velocity.y
             self.point_coordinates[i + 5] = velocity.z
+
+            self.point_coordinates[i + 6] += Float(dt)
         }
 
         self.point_mesh.replace_coordinates(with: self.point_coordinates)
@@ -351,7 +365,7 @@ struct View3D:GameScene
             fatalError("failed to make mesh")
         }
         self._cube = cube_mesh
-        self._cloudvectors = FlowSphere(n: 12000)
+        self._cloudvectors = FlowSphere(n: 12000, lifetime: 5)
     }
 
     func release_resources()
