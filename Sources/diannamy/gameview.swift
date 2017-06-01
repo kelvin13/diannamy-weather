@@ -23,9 +23,15 @@ enum Shaders
                            tex_uniforms : [],
                            uniforms     : ["model"])!
     static
-    let cloudgen  = Shader(vertex_file  : "Sources/Shaders/cloudgen.vert",
-                           geometry_file: "Sources/Shaders/cloudgen.geom",
-                           fragment_file: "Sources/Shaders/cloudgen.frag",
+    let cloudgen_shield  = Shader(vertex_file  : "Sources/Shaders/cloudgen.vert",
+                           geometry_file: "Sources/Shaders/cloudgen-shield.geom",
+                           fragment_file: "Sources/Shaders/cloudgen-shield.frag",
+                           tex_uniforms : ["tex_cloud"],
+                           uniforms     : ["model"])!
+    static
+    let cloudgen_kernel  = Shader(vertex_file  : "Sources/Shaders/cloudgen.vert",
+                           geometry_file: "Sources/Shaders/cloudgen-kernel.geom",
+                           fragment_file: "Sources/Shaders/cloudgen-kernel.frag",
                            tex_uniforms : ["tex_cloud"],
                            uniforms     : ["model"])!
     static
@@ -49,7 +55,8 @@ class FlowSphere
         field_mesh:MeshResource,
         ball_mesh:MeshResource
 
-    let cloud_tex:Texture2DResource,
+    let cloud_tex_shield:Texture2DResource,
+        cloud_tex_kernel:Texture2DResource,
         globe_tex:CubeTextureResource
 
     var transform:Transform,
@@ -163,7 +170,8 @@ class FlowSphere
         }
         self.ball_mesh = ball_mesh
 
-        self.cloud_tex = Texture2DResource(png: "../Textures/shield1.png")!
+        self.cloud_tex_shield = Texture2DResource(png: "../Textures/shield1.png")!
+        self.cloud_tex_kernel = Texture2DResource(png: "../Textures/cloud2.png")!
         self.globe_tex = CubeTextureResource(png_pattern: "../Textures/color_cube")!
 
         self.transform = Transform()
@@ -174,7 +182,10 @@ class FlowSphere
         self.point_mesh.release_resources()
         self.field_mesh.release_resources()
         self.ball_mesh.release_resources()
-        self.cloud_tex.release_resources()
+
+        self.globe_tex.release_resources()
+        self.cloud_tex_shield.release_resources()
+        self.cloud_tex_kernel.release_resources()
     }
 
     func advance_points(dt:Double)
@@ -262,15 +273,22 @@ class FlowSphere
         glDrawElements(GL_TRIANGLES, self.ball_mesh.n, GL_UNSIGNED_INT, nil)
 
         // clouds
-        glUseProgram(program: Shaders.cloudgen.program)
-        glUniformMatrix4fv(Shaders.cloudgen.u_ids[0], 1, false, self.transform.model_matrix)
-            // bind cloud texture to location 0
-        glUniform1i(Shaders.cloudgen.tex_u_ids[0], 0)
-        glActiveTexture(texture: GL_TEXTURE0)
-        glBindTexture(GL_TEXTURE_2D, self.cloud_tex.tex_id)
-
         glDisable(cap: GL_DEPTH_TEST)
         glBindVertexArray(array: self.point_mesh.VAO)
+
+        glUseProgram(program: Shaders.cloudgen_shield.program)
+        glUniformMatrix4fv(Shaders.cloudgen_shield.u_ids[0], 1, false, self.transform.model_matrix)
+            // bind cloud texture to location 0
+        glUniform1i(Shaders.cloudgen_shield.tex_u_ids[0], 0)
+        glActiveTexture(texture: GL_TEXTURE0)
+        glBindTexture(GL_TEXTURE_2D, self.cloud_tex_shield.tex_id)
+        glDrawElements(GL_POINTS, self.point_mesh.n, GL_UNSIGNED_INT, nil)
+
+        glUseProgram(program: Shaders.cloudgen_kernel.program)
+        glUniformMatrix4fv(Shaders.cloudgen_kernel.u_ids[0], 1, false, self.transform.model_matrix)
+            // bind cloud texture to location 0
+        glUniform1i(Shaders.cloudgen_kernel.tex_u_ids[0], 0)
+        glBindTexture(GL_TEXTURE_2D, self.cloud_tex_kernel.tex_id)
         glDrawElements(GL_POINTS, self.point_mesh.n, GL_UNSIGNED_INT, nil)
 
         glEnable(cap: GL_DEPTH_TEST)
