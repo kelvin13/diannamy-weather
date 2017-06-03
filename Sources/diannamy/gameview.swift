@@ -63,7 +63,7 @@ class FlowSphere
         θ:Double = 0
 
     private static
-    let noise_gen:SuperSimplex3D = SuperSimplex3D(amplitude: 1/256, frequency: 1.8, seed: 1)
+    let noise_gen:SuperSimplex3D = SuperSimplex3D(amplitude: 1/256, frequency: 2.5, seed: 1)
     private static
     func potential(_ x:Double, _ y:Double, _ z:Double, θ:Double) -> Double
     {
@@ -221,7 +221,7 @@ class FlowSphere
         }
 
         self.θ -= 0.15 * dt
-        let cloud_speed:Float = Float(0.125 * dt)
+        let cloud_speed:Float = Float(0.075 * dt)
         for i in stride(from: 0, to: self.point_coordinates.count, by: self.cloudpoint_stride)
         {
             let position:Vector3D<Double> = Vector3D(Double(self.point_coordinates[i]), Double(self.point_coordinates[i + 1]), Double(self.point_coordinates[i + 2]))
@@ -284,12 +284,12 @@ class FlowSphere
         glBindTexture(GL_TEXTURE_2D, self.cloud_tex_shield.tex_id)
         glDrawElements(GL_POINTS, self.point_mesh.n, GL_UNSIGNED_INT, nil)
 
-        glUseProgram(program: Shaders.cloudgen_kernel.program)
-        glUniformMatrix4fv(Shaders.cloudgen_kernel.u_ids[0], 1, false, self.transform.model_matrix)
+        //glUseProgram(program: Shaders.cloudgen_kernel.program)
+        //glUniformMatrix4fv(Shaders.cloudgen_kernel.u_ids[0], 1, false, self.transform.model_matrix)
             // bind cloud texture to location 0
-        glUniform1i(Shaders.cloudgen_kernel.tex_u_ids[0], 0)
-        glBindTexture(GL_TEXTURE_2D, self.cloud_tex_kernel.tex_id)
-        glDrawElements(GL_POINTS, self.point_mesh.n, GL_UNSIGNED_INT, nil)
+        //glUniform1i(Shaders.cloudgen_kernel.tex_u_ids[0], 0)
+        //glBindTexture(GL_TEXTURE_2D, self.cloud_tex_kernel.tex_id)
+        //glDrawElements(GL_POINTS, self.point_mesh.n, GL_UNSIGNED_INT, nil)
 
         glEnable(cap: GL_DEPTH_TEST)
         glBindVertexArray(array: 0)
