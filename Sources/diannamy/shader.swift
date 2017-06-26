@@ -1,5 +1,5 @@
 import Taylor
-import SGLOpenGL
+import OpenGL
 
 struct Shader
 {

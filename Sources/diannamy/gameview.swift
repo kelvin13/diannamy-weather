@@ -1,4 +1,4 @@
-import SGLOpenGL
+import OpenGL
 
 import var Cairo.CAIRO_FONT_SLANT_NORMAL
 import var Cairo.CAIRO_FONT_SLANT_ITALIC
@@ -63,7 +63,7 @@ class FlowSphere
         θ:Double = 0
 
     private static
-    let noise_gen:SuperSimplex3D = SuperSimplex3D(amplitude: 1/256, frequency: 2.5, seed: 1)
+    let noise_gen:SuperSimplexNoise3D = SuperSimplexNoise3D(amplitude: 0.25, frequency: 2.5, seed: 1)
     private static
     func potential(_ x:Double, _ y:Double, _ z:Double, θ:Double) -> Double
     {

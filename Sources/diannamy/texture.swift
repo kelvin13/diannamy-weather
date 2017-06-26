@@ -1,4 +1,4 @@
-import SGLOpenGL
+import OpenGL
 
 import MaxPNG
 
@@ -128,11 +128,20 @@ struct Bitmap
             return nil
         }
 
+        /*
         guard let pixbytes = properties.expand(raw_data: deinterlaced_pixbuf)
         else
         {
             return nil
         }
+        */
+        // i haven’t released maxpng 2.1, so we have to workaround for now
+        guard properties.bit_depth >= 8
+        else
+        {
+            fatalError("texture bit depth too small, need maxpng 2.1")
+        }
+        let pixbytes = deinterlaced_pixbuf
 
         self.format = format
         self.width  = CInt(properties.width)

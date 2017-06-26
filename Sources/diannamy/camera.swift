@@ -1,4 +1,4 @@
-import SGLOpenGL
+import OpenGL
 import Geometry
 
 struct UniformCameraResource

@@ -2,30 +2,39 @@
   "object": {
     "pins": [
       {
+        "package": "MaxPNG",
+        "repositoryURL": "https://github.com/kelvin13/maxpng",
+        "state": {
+          "branch": "master",
+          "revision": "4ec89b13c623e2c494436d76370e865c71f0dd23",
+          "version": null
+        }
+      },
+      {
         "package": "Noise",
-        "repositoryURL": "/home/kelvin/dev/noise",
+        "repositoryURL": "https://github.com/kelvin13/noise",
         "state": {
-          "branch": null,
-          "revision": "0a7395ce1b553ddaa77a39571ce52e917449c599",
-          "version": "0.0.0"
+          "branch": "master",
+          "revision": "c98de737fa0bdfcf764c8b2bb9be148ae9e1c07c",
+          "version": null
         }
       },
       {
-        "package": "SGLOpenGL",
-        "repositoryURL": "/home/kelvin/dev/Diannamy3/SGLOpenGL",
+        "package": "OpenGL",
+        "repositoryURL": "https://github.com/kelvin13/swift-opengl",
         "state": {
-          "branch": null,
-          "revision": "8d86db3e1874fd32f4254624322b3e474ff3535b",
-          "version": "1.0.0"
+          "branch": "master",
+          "revision": "9a0faa406d434a5a922c105bbdc19b9e35123c1d",
+          "version": null
         }
       },
       {
-        "package": "Zlib",
-        "repositoryURL": "https://github.com/kelvin13/swift-zlib",
+        "package": "XML",
+        "repositoryURL": "https://github.com/kelvin13/swiftxml",
         "state": {
-          "branch": null,
-          "revision": "5bce13425cc29bd5508cac62256e7f06efbc18c6",
-          "version": "1.0.0"
+          "branch": "master",
+          "revision": "1d93010dc3d90af9d4daaad82124a9b81fede9c3",
+          "version": null
         }
       }
     ]

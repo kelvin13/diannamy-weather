@@ -1,4 +1,4 @@
-import SGLOpenGL
+import OpenGL
 
 struct MeshResource // we must always deallocate this from the GPU memory
 {

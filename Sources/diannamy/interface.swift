@@ -1,5 +1,5 @@
 import GLFW
-import SGLOpenGL
+import OpenGL
 
 enum PhysicalKey
 {

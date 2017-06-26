@@ -8,9 +8,9 @@ import PackageDescription
 let package = Package(
     name: "Diannamy",
     products: [.executable(name: "diannamy", targets: ["diannamy"])],
-    dependencies: [.package(url: "../SGLOpenGL", from: "1.0.0"),
-                   .package(url: "../../noise", from: "0.0.0"),
-                   .package(url: "https://github.com/kelvin13/maxpng", from: "2.0.1")
+    dependencies: [.package(url: "https://github.com/kelvin13/swift-opengl", .branch("master")),
+                   .package(url: "https://github.com/kelvin13/noise", .branch("master")),
+                   .package(url: "https://github.com/kelvin13/maxpng", .branch("master"))
                    ],
     targets: [
                 .target(name: "GLFW"),
@@ -18,7 +18,7 @@ let package = Package(
                 .target(name: "SwiftCairo", dependencies: ["Cairo"]),
                 .target(name: "Taylor"),
                 .target(name: "Geometry"),
-                .target(name: "diannamy", dependencies: ["SGLOpenGL", "Noise", "MaxPNG", "GLFW", "SwiftCairo", "Taylor", "Geometry"], exclude: ["Sources/Shaders"])
+                .target(name: "diannamy", dependencies: ["OpenGL", "Noise", "MaxPNG", "GLFW", "SwiftCairo", "Taylor", "Geometry"], exclude: ["Sources/Shaders"])
              ],
     swiftLanguageVersions: [4]
                 )
