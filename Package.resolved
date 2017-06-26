@@ -6,7 +6,7 @@
         "repositoryURL": "https://github.com/kelvin13/maxpng",
         "state": {
           "branch": "master",
-          "revision": "4ec89b13c623e2c494436d76370e865c71f0dd23",
+          "revision": "3aeaa23a3cf80c303fcd87d0d67d7f2b681df3ce",
           "version": null
         }
       },
@@ -15,7 +15,7 @@
         "repositoryURL": "https://github.com/kelvin13/noise",
         "state": {
           "branch": "master",
-          "revision": "c98de737fa0bdfcf764c8b2bb9be148ae9e1c07c",
+          "revision": "0309d3f027d92d5e8fbbf43604fea14a8dd931c0",
           "version": null
         }
       },
@@ -24,7 +24,7 @@
         "repositoryURL": "https://github.com/kelvin13/swift-opengl",
         "state": {
           "branch": "master",
-          "revision": "9a0faa406d434a5a922c105bbdc19b9e35123c1d",
+          "revision": "dd369b7cf5da2d8fd22c78ec4baab16b09d8668a",
           "version": null
         }
       },
@@ -33,7 +33,7 @@
         "repositoryURL": "https://github.com/kelvin13/swiftxml",
         "state": {
           "branch": "master",
-          "revision": "1d93010dc3d90af9d4daaad82124a9b81fede9c3",
+          "revision": "6bce6e284e059d8763c526507fc4eac91021fad1",
           "version": null
         }
       }
